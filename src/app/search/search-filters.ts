@@ -35,7 +35,8 @@ import S8Sources from 'data/d2/s8-source-info';
 import seasonTags from 'data/d2/season-tags.json';
 import seasonalSocketHashesByName from 'data/d2/seasonal-mod-slots.json';
 import { DEFAULT_SHADER } from 'app/inventory/store/sockets';
-
+import { initJunkPerks, junkPerkFilter, junkPerkConfig } from 'app/search/junkPerkFilter.js';
+/**/
 /**
  * (to the tune of TMNT) ♪ string processing helper functions ♫
  * these smooth out various quirks for string comparison
@@ -177,6 +178,7 @@ export function buildSearchConfig(destinyVersion: 1 | 2): SearchConfig {
     ],
     classType: ['titan', 'hunter', 'warlock'],
     dupe: ['dupe', 'duplicate'],
+    junkperk: ['junkperk'],
     dupelower: ['dupelower'],
     locked: ['locked'],
     unlocked: ['unlocked'],
@@ -412,6 +414,11 @@ function searchFilters(
   const _lowerDupes = {};
   let _loadoutItemIds: Set<string> | undefined;
   const getLoadouts = _.once(() => dimLoadoutService.getLoadouts());
+  const dupeReport = [];
+  initJunkPerks(stores, dupeReport);
+
+  const compiledJunkItemTemplate = _.template(junkPerkConfig.junkItemTemplate);
+  const compiledJunkReasonTemplate = _.template(junkPerkConfig.junkReasonTemplate);
 
   function initDupes() {
     // The comparator for sorting dupes - the first item will be the "best" and all others are "dupelower".
@@ -762,6 +769,23 @@ function searchFilters(
         }
 
         return _maxPowerLoadoutItems.includes(item.id);
+      },
+      junkperk(item: DimItem) {
+        const doShow = junkPerkFilter(item, dupeReport);
+
+        if (doShow) {
+          const junkItem: any = dupeReport[dupeReport.length - 1];
+          //console.log('junkItem', junkItem);
+          item.junkReport =
+            compiledJunkItemTemplate(junkItem) +
+            '\n' +
+            _.map(junkItem.reasons, (junkItemReason) => {
+              return compiledJunkReasonTemplate(junkItemReason) + '\n';
+            }).join('');
+        } else {
+          item.junkReport = 'Wanted Item';
+        }
+        return doShow;
       },
       /** looks for a loadout (simultaneously equippable) maximized for this stat */
       maxstatloadout(item: D2Item, predicate: string) {

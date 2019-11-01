@@ -97,7 +97,7 @@ export default function InventoryItem({
       id={item.index}
       onClick={enhancedOnClick}
       onDoubleClick={onDoubleClick}
-      title={`${item.name}\n${item.typeName}`}
+      title={`${item.name}\n${item.typeName}\n${item.junkReport}`}
       className={clsx('item', itemStyles)}
       ref={innerRef}
     >
